@@ -15,10 +15,11 @@ export function PersonaCard({ persona }: { persona: Persona }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const slugOrId = (persona as any).slug || persona.id;
+  const slug = persona.slug;
+  const privateChatHref = `/chat/p/${persona.id}`;
 
   async function onCopyLink() {
-    const url = `${window.location.origin}/chat/${slugOrId}`;
+    const url = `${window.location.origin}/chat/${slug}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -90,11 +91,11 @@ export function PersonaCard({ persona }: { persona: Persona }) {
 
       <div className="mt-4 flex flex-wrap gap-2">
         <span className="soft-pill">{persona.is_public ? "Public" : "Private"}</span>
-        <span className="soft-pill">Slug: {slugOrId}</span>
+        <span className="soft-pill">Slug: {slug}</span>
       </div>
 
       <div className="mt-5 flex items-center justify-between gap-3">
-        <Link href={`/chat/${slugOrId}`} className="btn-primary px-4 py-2.5">
+        <Link href={privateChatHref} className="btn-primary px-4 py-2.5">
           대화하기
         </Link>
         <button type="button" onClick={onCopyLink} className="btn-secondary px-4 py-2.5 text-xs">
