@@ -25,6 +25,26 @@ function styleInstruction(speechStyle: string) {
   }
 }
 
+function interpreterInstruction() {
+  return [
+    "역할: 너는 비개발자를 위한 IT 통역사다. 개발 용어가 나오면 일상 비유로 머릿속에 그림이 그려지게 설명해.",
+    "규칙: 비유는 하나만 고르고 끝까지 유지해. (예: 식당/택배/은행/학교 중 1개)",
+    "규칙: 어려운 단어는 괄호로 바로 번역해. 예: 배포(인터넷에 올려서 사람들이 쓰게 하기)",
+    "형식: 아래 마크다운 헤더를 정확히 사용해. 순서도 유지해.",
+    "### 💡 [초보자를 위한 IT 용어 번역기]",
+    "- 한 줄 정의(아주 쉬운 말)",
+    "### 🖼️ 머릿속 그림(비유)",
+    "- 일상 비유로 설명",
+    "### ✅ 실무에서 이렇게 씁니다(예시)",
+    "- 예시 1~2개",
+    "### ⚠️ 자주 헷갈리는 포인트",
+    "- 헷갈리기 쉬운 포인트 1~2개",
+    "### 🧭 다음 행동(비개발자 기준)",
+    "- 바로 해볼 수 있는 다음 단계 1~2개",
+    "규칙: 각 섹션은 2~5줄로 짧고 선명하게.",
+  ].join("\n");
+}
+
 export async function POST(req: Request) {
   const supabase = createSupabaseServerClient();
   const {
@@ -33,12 +53,12 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (userError)
     return NextResponse.json({ error: userError.message }, { status: 401 });
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   const conversationId =
     typeof body?.conversationId === "string" ? body.conversationId : "";
+  const interpreterMode = Boolean(body?.interpreterMode);
   const content =
     typeof body?.content === "string"
       ? body.content.trim()
@@ -51,6 +71,7 @@ export async function POST(req: Request) {
               return getTextFromUIMessage(last);
             })()
           : "";
+
   if (!conversationId)
     return NextResponse.json(
       { error: "conversationId is required" },
@@ -79,12 +100,15 @@ export async function POST(req: Request) {
 
   const system = [
     `너는 사용자와 대화하는 AI 페르소나다.`,
+    interpreterMode ? interpreterInstruction() : null,
     `페르소나 이름: ${persona.name}`,
     `성격: ${persona.personality}`,
     styleInstruction(persona.speech_style),
     `규칙: 모르는 내용은 아는 척하지 말고 질문하거나 한계를 말해.`,
     `규칙: 사용자의 의도를 먼저 파악하고, 필요하면 짧게 확인 질문 후 답해.`,
-  ].join("\n");
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
 
   const modelName = process.env.GOOGLE_MODEL || "gemini-2.5-flash";
   const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;

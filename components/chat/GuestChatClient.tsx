@@ -26,11 +26,19 @@ export function GuestChatClient({
 }) {
   const [input, setInput] = useState("");
   const starters = useMemo(() => makeStarter(persona.name), [persona.name]);
+  const [interpreterMode, setInterpreterMode] = useState(false);
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/public-chat/stream",
+        body: { slug: persona.slug, interpreterMode }
+      }),
+    [persona.slug, interpreterMode],
+  );
+
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/public-chat/stream",
-      body: { slug: persona.slug }
-    })
+    transport
   });
 
   async function onSubmit(e: FormEvent) {
@@ -61,7 +69,35 @@ export function GuestChatClient({
               </div>
             </div>
           </div>
-          <div className="soft-pill">Guest Chat</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setInterpreterMode((prev) => !prev)}
+              className={[
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] transition-all",
+                interpreterMode
+                  ? "border-[rgba(79,70,229,0.26)] bg-[rgba(79,70,229,0.10)] text-[rgb(var(--accent))] shadow-[0_10px_22px_rgba(79,70,229,0.12)]"
+                  : "border-white/80 bg-white/82 text-[rgb(var(--muted))] shadow-[inset_0_1px_0_rgba(255,255,255,0.92)] hover:-translate-y-0.5 hover:border-[rgba(79,70,229,0.18)] hover:text-[rgb(var(--text))]",
+              ].join(" ")}
+              aria-pressed={interpreterMode}
+            >
+              IT 통역사
+              <span
+                className={[
+                  "relative inline-flex h-[18px] w-[30px] items-center rounded-full border border-black/5 bg-white/80 px-0.5",
+                  interpreterMode ? "justify-end" : "justify-start",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "h-[14px] w-[14px] rounded-full shadow-[0_6px_14px_rgba(15,23,42,0.12)] transition-transform",
+                    interpreterMode ? "bg-[rgb(var(--accent))]" : "bg-[rgba(107,114,128,0.65)]",
+                  ].join(" ")}
+                />
+              </span>
+            </button>
+            <div className="soft-pill">Guest Chat</div>
+          </div>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
@@ -92,6 +128,10 @@ export function GuestChatClient({
               />
             ))
           )}
+        </div>
+
+        <div className="mt-4 text-xs leading-7 text-[rgb(var(--muted))]">
+          IT 통역사 모드를 켜면 개발 용어를 일상 비유로 풀어 설명하고, 정해진 마크다운 구조로 답변합니다.
         </div>
 
         <form onSubmit={onSubmit} className="mt-6 flex gap-3">
